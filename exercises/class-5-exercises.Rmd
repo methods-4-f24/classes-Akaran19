@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(rethinking)
-library(daggity)
+library(dagitty)
 ```
 
 Welcome back to your favorite course of all time. This week we start getting into causal inference - arguably the most important part of all of your Methods courses. Why? Because we finally start practicing *doing science*, not just statistics.
@@ -42,6 +42,13 @@ See if you can come up with a cogsci-inspired phenomenon. Anxiety? Bliss? Make a
 ```{r}
 
 # ilustrate your dag
+library(dagitty)
+dag5.1 <- dagitty( "dag {
+Hours -> Stress
+Canteen -> Stress
+}")
+coordinates(dag5.1) <- list( x=c(Hours=0,Stress=1,Canteen=2) , y=c(Hours=0,Stress=1,Canteen=0) )
+drawdag( dag5.1 )
 # What are the conditional independencies of your DAG?
 
 ```
@@ -51,6 +58,32 @@ Now see if you can play god and generate the data. This will require you to thin
 ```{r}
 
 # generate your data here
+# Read the CSV data into a dataframe
+data <- read.csv(text = "Hours,Canteen,Stress
+35,15,6
+50,25,4
+45,20,7
+60,30,3
+70,35,2
+55,28,5
+40,18,8
+65,32,4
+75,38,3
+25,10,9
+48,24,6
+68,34,5
+30,12,7
+58,29,4
+80,40,2
+38,19,8
+42,21,7
+72,36,3
+52,26,5
+55,27,6")
+
+# Display the dataframe
+print(data)
+
 
 ```
 
@@ -60,11 +93,26 @@ Invent your own example of a masked relationship. An outcome variable should be 
 
 No need to illustrate or code anything here. Just think it up. Try another cog-sci related phenomenon.
 
+
+Level of IQ/ general intelligence <- number of instruments played + number of languages spoken
 #### 5M4.
 
 In the divorce data, States with high numbers of Mormons (members of The Church of Jesus Christ of Latter-day Saints, LDS) have much lower divorce rates than the regression models expected. Find a list of LDS population by State and use those numbers as a predictor variable, predicting divorce rate using marriage rate, median age at marriage, and percent LDS population (possibly stan- dardized). You may want to consider transformations of the raw percent LDS variable.
 
 You don't need to find any data tho, we got you covered.
+```{r}
+dag5.1 <- dagitty( "dag {
+L -> A
+L -> M
+L -> D
+A -> D
+A -> M
+M -> D
+}")
+coordinates(dag5.1) <- list( x=c(A=0,D=1,M=2,L=1) , y=c(A=1,D=2,M=1, L=0) )
+drawdag( dag5.1 )
+```
+
 
 ```{r}
 
@@ -82,6 +130,31 @@ d$L <- standardize( d$pct_LDS )
 d$A <- standardize( d$MedianAgeMarriage )
 d$M <- standardize( d$Marriage )
 d$D <- standardize( d$Divorce )
+
+m5.3_A <- quap(
+alist(
+## A -> D <- M
+D ~ dnorm( mu , sigma ) ,
+mu <- a + bM*M + bA*A +bL*L,
+a ~ dnorm( 0 , 0.2 ) ,
+bM ~ dnorm( 0 , 0.5 ) ,
+bA ~ dnorm( 0 , 0.5 ) ,
+bL ~ dnorm(0,0.5),
+sigma ~ dexp( 1 )), data = d )
+
+precis(m5.3_A)
+
+m5.3_B <- quap(
+alist(
+## A -> D <- M
+D ~ dnorm( mu , sigma ) ,
+mu <- a +bL*L,
+a ~ dnorm( 0 , 0.2 ) ,
+bL ~ dnorm(0,0.5),
+sigma ~ dexp( 1 )), data = d )
+
+precis(m5.3_B)
+
 
 ```
 
